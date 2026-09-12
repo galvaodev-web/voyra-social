@@ -77,6 +77,21 @@ export interface SocialPost {
   saved: boolean;
   demo?: boolean;
 }
+export interface Passport {
+  id: string;
+  user_id: string;
+  trip_id: string;
+  name: string;
+  destination: string;
+  country: string;
+  start_date: string;
+  end_date: string;
+  days: number;
+  place_count: number;
+  public_route_id: string | null;
+  visible: boolean;
+  awarded_at: string;
+}
 export interface Comment {
   id: string;
   post_id: string;
