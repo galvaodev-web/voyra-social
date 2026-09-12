@@ -1,7 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { ProfileEditor } from "@/components/profile/ProfileEditor";
+import { PassportPanel } from "@/components/passport/PassportPanel";
 import { redirect } from "next/navigation";
 export const metadata = { title: "Meu perfil", robots: { index: false } };
+export const dynamic = "force-dynamic";
 export default async function Page() {
   const c = await createClient();
   if (!c) redirect("/login");
@@ -16,5 +18,10 @@ export default async function Page() {
     .eq("id", user.id)
     .single();
   if (error) throw new Error("Seu perfil está indisponível.");
-  return <ProfileEditor profile={data} />;
+  return (
+    <div style={{ maxWidth: 900, margin: "auto" }}>
+      <ProfileEditor profile={data} />
+      <PassportPanel />
+    </div>
+  );
 }
