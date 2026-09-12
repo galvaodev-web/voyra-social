@@ -83,7 +83,7 @@ export async function getFeed(options: FeedQuery = {}): Promise<FeedPage> {
       creators: [] as string[],
     };
     if (user) {
-      const [follows, dests] = await Promise.all([
+      const [follows, dests, explicit] = await Promise.all([
         client
           .schema("social")
           .from("follows")
@@ -94,9 +94,21 @@ export async function getFeed(options: FeedQuery = {}): Promise<FeedPage> {
           .from("destination_follows")
           .select("destination_id")
           .eq("user_id", user.id),
+        client
+          .schema("social")
+          .from("user_preferences")
+          .select("destination_ids,categories")
+          .eq("user_id", user.id)
+          .maybeSingle(),
       ]);
       prefs.creators = follows.data?.map((r) => r.following_id) ?? [];
-      prefs.destinations = dests.data?.map((r) => r.destination_id) ?? [];
+      prefs.destinations = Array.from(
+        new Set([
+          ...(dests.data?.map((r) => r.destination_id) ?? []),
+          ...((explicit.data?.destination_ids as string[] | null) ?? []),
+        ]),
+      );
+      prefs.categories = (explicit.data?.categories as string[] | null) ?? [];
     }
     ordered = rankFeed(window, prefs);
   }
