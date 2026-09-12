@@ -1,11 +1,14 @@
+import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import {
   getUserTrips,
   addPlaceToTrip,
+  importRoute,
+  publishTrip,
   TravelUnavailable,
 } from "@/lib/voyra-travel";
 
-export const dynamic = "force-static";
+export const dynamic = "force-dynamic";
 
 async function token() {
   const c = await createClient();
@@ -19,13 +22,8 @@ async function token() {
   } = await c.auth.getSession();
   return session?.access_token ?? null;
 }
-export async function GET() {
-  if (process.env.GITHUB_ACTIONS)
-    return Response.json(
-      { error: "Indisponivel no GitHub Pages." },
-      { status: 503 },
-    );
 
+export async function GET() {
   const t = await token();
   if (!t)
     return Response.json(
@@ -46,13 +44,8 @@ export async function GET() {
     );
   }
 }
-export async function POST(request: Request) {
-  if (process.env.GITHUB_ACTIONS)
-    return Response.json(
-      { error: "Indisponivel no GitHub Pages." },
-      { status: 503 },
-    );
 
+export async function POST(request: Request) {
   if (request.headers.get("origin") !== new URL(request.url).origin)
     return new Response(null, { status: 403 });
   const t = await token();
@@ -62,7 +55,25 @@ export async function POST(request: Request) {
       { status: 401 },
     );
   try {
-    const b = await request.json();
+    const b = z
+      .object({
+        action: z.enum(["add_place", "import_route", "publish_trip"]).optional(),
+        tripId: z.string().uuid().optional(),
+        postId: z.string().uuid().optional(),
+        routeId: z.string().uuid().optional(),
+      })
+      .parse(await request.json());
+
+    if (b.action === "import_route") {
+      if (!b.routeId) throw new Error("route");
+      return Response.json(await importRoute(t, b.routeId));
+    }
+    if (b.action === "publish_trip") {
+      if (!b.tripId) throw new Error("trip");
+      return Response.json(await publishTrip(t, b.tripId));
+    }
+    if (!b.tripId || !b.postId) throw new Error("place");
+
     const c = await createClient();
     const { data } = await c!
       .schema("social")
@@ -73,10 +84,11 @@ export async function POST(request: Request) {
         { status: 404 },
       );
     return Response.json(await addPlaceToTrip(t, b.tripId, b.postId));
-  } catch {
-    return Response.json(
-      { error: "Não foi possível adicionar o lugar. Tente novamente." },
-      { status: 503 },
-    );
+  } catch (error) {
+    const message =
+      error instanceof TravelUnavailable
+        ? error.message
+        : "Não foi possível concluir a ação no Voyra Travel. Tente novamente.";
+    return Response.json({ error: message }, { status: 503 });
   }
 }
