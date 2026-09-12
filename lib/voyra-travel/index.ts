@@ -6,6 +6,12 @@ const tripSchema = z.object({
   destination: z.string(),
   start_date: z.string(),
 });
+const completedTripSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  destination: z.string(),
+  end_date: z.string(),
+});
 const completionSchema = z.object({
   trip_id: z.string().uuid(),
   name: z.string(),
@@ -18,6 +24,7 @@ const completionSchema = z.object({
   public_route_id: z.string().uuid().nullable(),
 });
 export type UserTrip = z.infer<typeof tripSchema>;
+export type CompletedTrip = z.infer<typeof completedTripSchema>;
 export type TripCompletion = z.infer<typeof completionSchema>;
 export class TravelUnavailable extends Error {
   constructor() {
@@ -47,6 +54,9 @@ async function travelRequest(path: string, token: string, body?: unknown) {
 }
 export async function getUserTrips(token: string): Promise<UserTrip[]> {
   return z.array(tripSchema).parse(await travelRequest("/social/trips", token));
+}
+export async function getCompletedTrips(token: string): Promise<CompletedTrip[]> {
+  return z.array(completedTripSchema).parse(await travelRequest("/social/completed-trips", token));
 }
 export async function addPlaceToTrip(
   token: string,
