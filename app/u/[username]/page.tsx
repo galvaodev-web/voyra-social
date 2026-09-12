@@ -1,11 +1,16 @@
 import { getProfile, getFeed } from "@/lib/feed/service";
 import { travelers } from "@/lib/demo";
+import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import { Award } from "lucide-react";
 import { FollowButton } from "@/components/profile/FollowButton";
 import { PostCard } from "@/components/posts/PostCard";
 import { ProfileReport } from "@/components/profile/ProfileReport";
+import type { Passport } from "@/types/social";
+
+export const dynamic = "force-dynamic";
 
 export function generateStaticParams() {
   return travelers.map((traveler) => ({ username: traveler.username }));
@@ -28,12 +33,23 @@ export default async function Page({
   searchParams: Promise<{ tab?: string }>;
 }) {
   const { username } = await params;
-  const { tab = "posts" } = process.env.GITHUB_ACTIONS
-    ? { tab: "posts" }
-    : await searchParams;
+  const { tab = "posts" } = await searchParams;
   const p = await getProfile(username);
   if (!p) notFound();
   const feed = await getFeed({ author: p.id });
+  const client = await createClient();
+  let passports: Passport[] = [];
+  if (client) {
+    const result = await client
+      .schema("social")
+      .from("passports")
+      .select("*")
+      .eq("user_id", p.id)
+      .eq("visible", true)
+      .order("end_date", { ascending: false })
+      .limit(50);
+    if (!result.error) passports = (result.data ?? []) as Passport[];
+  }
   return (
     <div style={{ maxWidth: 900, margin: "auto" }}>
       {p.cover_url && (
@@ -89,13 +105,28 @@ export default async function Page({
         )}
         <nav className="profile-tabs">
           <Link href={`/u/${username}`}>Posts</Link>
+          <Link href={`/u/${username}?tab=passport`}>Passport</Link>
           <Link href={`/u/${username}?tab=viagens`}>Viagens</Link>
           <Link href={`/u/${username}?tab=roteiros`}>Roteiros</Link>
-          <Link href="/salvos">Meus salvos</Link>
         </nav>
       </section>
       {tab === "posts" ? (
         feed.posts.map((post) => <PostCard key={post.id} post={post} />)
+      ) : tab === "passport" ? (
+        passports.length ? (
+          <section className="destination-grid" style={{ marginTop: 24 }}>
+            {passports.map((passport) => (
+              <Link className="rail-card" href={`/recap/${passport.id}`} key={passport.id}>
+                <span className="eyebrow"><Award size={13} /> VOYRA PASSPORT</span>
+                <h2>{passport.destination}</h2>
+                <p>{passport.country || "Viagem verificada"}</p>
+                <small>{passport.days} dias · {passport.place_count} lugares · {new Date(`${passport.end_date}T00:00:00Z`).getUTCFullYear()}</small>
+              </Link>
+            ))}
+          </section>
+        ) : (
+          <section className="empty-state"><h2>Nenhum selo público ainda.</h2><p>Passports aparecem aqui quando o viajante decide compartilhá-los.</p></section>
+        )
       ) : (
         <section className="empty-state">
           <h2>

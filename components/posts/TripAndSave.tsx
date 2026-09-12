@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Plus, Route } from "lucide-react";
+import { ArrowUpRight, Plus, Route } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { mutate } from "@/lib/client-api";
 import type { SocialPost, Collection } from "@/types/social";
@@ -8,12 +8,14 @@ export function AddToTripButton({ post }: { post: SocialPost }) {
   const [open, setOpen] = useState(false);
   const [trips, setTrips] = useState<{ id: string; name: string }[]>([]);
   const [message, setMessage] = useState("");
+  const [tripId, setTripId] = useState<string | null>(null);
   return (
     <>
       <button
         className="add-trip"
         onClick={async () => {
           setOpen(true);
+          setTripId(null);
           setMessage("Buscando suas viagens…");
           try {
             const r = await fetch("/api/travel");
@@ -23,7 +25,7 @@ export function AddToTripButton({ post }: { post: SocialPost }) {
             setMessage(
               result.length
                 ? "Escolha a viagem que receberá este lugar."
-                : "Você ainda não tem viagens futuras.",
+                : "Você ainda não tem viagens ativas ou futuras.",
             );
           } catch (e) {
             setMessage((e as Error).message);
@@ -49,11 +51,16 @@ export function AddToTripButton({ post }: { post: SocialPost }) {
                   const r = await fetch("/api/travel", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ tripId: t.id, postId: post.id }),
+                    body: JSON.stringify({ action: "add_place", tripId: t.id, postId: post.id }),
                   });
                   const result = await r.json();
                   if (!r.ok) throw new Error(result.error);
-                  setMessage("Lugar adicionado ao seu roteiro!");
+                  setMessage(
+                    result.duplicate
+                      ? "Este lugar já estava no seu roteiro."
+                      : "Lugar adicionado ao seu roteiro!",
+                  );
+                  setTripId(t.id);
                   setTrips([]);
                 } catch (e) {
                   setMessage((e as Error).message);
@@ -64,6 +71,14 @@ export function AddToTripButton({ post }: { post: SocialPost }) {
               <Plus size={18} />
             </button>
           ))}
+          {tripId && (
+            <a
+              className="primary"
+              href={`${process.env.NEXT_PUBLIC_TRAVEL_URL ?? "https://voyra.com"}/app/viagens/${tripId}`}
+            >
+              Abrir no Voyra Travel <ArrowUpRight size={15} />
+            </a>
+          )}
         </Modal>
       )}
     </>
