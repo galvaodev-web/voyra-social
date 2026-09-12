@@ -16,36 +16,58 @@ export function PassportPanel() {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
 
-  async function load() {
-    try {
-      const response = await fetch("/api/passport", { cache: "no-store" });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Não foi possível carregar o Passport.");
-      setTrips(data);
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Não foi possível carregar o Passport.");
-    }
-  }
-
   useEffect(() => {
-    void load();
+    let active = true;
+    fetch("/api/passport", { cache: "no-store" })
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok)
+          throw new Error(data.error || "Não foi possível carregar o Passport.");
+        return data as EligibleTrip[];
+      })
+      .then((data) => {
+        if (active) setTrips(data);
+      })
+      .catch((error: unknown) => {
+        if (active)
+          setMessage(
+            error instanceof Error
+              ? error.message
+              : "Não foi possível carregar o Passport.",
+          );
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   return (
     <section className="rail-card" style={{ marginTop: 24 }}>
       <div className="section-heading">
-        <h2><Award size={19} /> Voyra Passport</h2>
+        <h2>
+          <Award size={19} /> Voyra Passport
+        </h2>
       </div>
       <p className="rail-subtitle">
         Viagens concluídas viram selos verificados para guardar e compartilhar.
       </p>
-      {!trips.length && !message && <p className="muted">Conclua uma viagem no Voyra Travel para liberar seu primeiro selo.</p>}
+      {!trips.length && !message && (
+        <p className="muted">
+          Conclua uma viagem no Voyra Travel para liberar seu primeiro selo.
+        </p>
+      )}
       <div className="stack">
         {trips.map((trip) => (
-          <div className="collection-option" key={trip.id} style={{ cursor: "default" }}>
+          <div
+            className="collection-option"
+            key={trip.id}
+            style={{ cursor: "default" }}
+          >
             <span>
               <strong>{trip.destination}</strong>
-              <small style={{ display: "block" }}><MapPin size={12} /> {trip.name}</small>
+              <small style={{ display: "block" }}>
+                <MapPin size={12} /> {trip.name}
+              </small>
             </span>
             {trip.passportId ? (
               <Link className="secondary" href={`/recap/${trip.passportId}`}>
@@ -65,11 +87,24 @@ export function PassportPanel() {
                       body: JSON.stringify({ tripId: trip.id }),
                     });
                     const data = await response.json();
-                    if (!response.ok) throw new Error(data.error || "Não foi possível liberar o selo.");
-                    setTrips((current) => current.map((item) => item.id === trip.id ? { ...item, passportId: data.id } : item));
+                    if (!response.ok)
+                      throw new Error(
+                        data.error || "Não foi possível liberar o selo.",
+                      );
+                    setTrips((current) =>
+                      current.map((item) =>
+                        item.id === trip.id
+                          ? { ...item, passportId: data.id }
+                          : item,
+                      ),
+                    );
                     setMessage("Voyra Passport liberado!");
                   } catch (error) {
-                    setMessage(error instanceof Error ? error.message : "Não foi possível liberar o selo.");
+                    setMessage(
+                      error instanceof Error
+                        ? error.message
+                        : "Não foi possível liberar o selo.",
+                    );
                   } finally {
                     setBusy(null);
                   }
@@ -81,7 +116,11 @@ export function PassportPanel() {
           </div>
         ))}
       </div>
-      {message && <p role="status" className="notice">{message}</p>}
+      {message && (
+        <p role="status" className="notice">
+          {message}
+        </p>
+      )}
     </section>
   );
 }
