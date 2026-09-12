@@ -49,7 +49,7 @@ export function AuthForm({ signup = false }: { signup?: boolean }) {
                 "Confira seu e-mail para confirmar a conta. Se já tiver uma conta Voyra, faça login.",
               );
             else {
-              router.push("/perfil");
+              router.push("/onboarding");
               router.refresh();
             }
           } catch (e) {
