@@ -1,10 +1,16 @@
 import { getProfile, getFeed } from "@/lib/feed/service";
+import { travelers } from "@/lib/demo";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { FollowButton } from "@/components/profile/FollowButton";
 import { PostCard } from "@/components/posts/PostCard";
 import { ProfileReport } from "@/components/profile/ProfileReport";
+
+export function generateStaticParams() {
+  return travelers.map((traveler) => ({ username: traveler.username }));
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -22,7 +28,9 @@ export default async function Page({
   searchParams: Promise<{ tab?: string }>;
 }) {
   const { username } = await params;
-  const { tab = "posts" } = await searchParams;
+  const { tab = "posts" } = process.env.GITHUB_ACTIONS
+    ? { tab: "posts" }
+    : await searchParams;
   const p = await getProfile(username);
   if (!p) notFound();
   const feed = await getFeed({ author: p.id });

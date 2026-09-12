@@ -4,6 +4,9 @@ import {
   addPlaceToTrip,
   TravelUnavailable,
 } from "@/lib/voyra-travel";
+
+export const dynamic = "force-static";
+
 async function token() {
   const c = await createClient();
   if (!c) return null;
@@ -17,6 +20,12 @@ async function token() {
   return session?.access_token ?? null;
 }
 export async function GET() {
+  if (process.env.GITHUB_ACTIONS)
+    return Response.json(
+      { error: "Indisponivel no GitHub Pages." },
+      { status: 503 },
+    );
+
   const t = await token();
   if (!t)
     return Response.json(
@@ -38,6 +47,12 @@ export async function GET() {
   }
 }
 export async function POST(request: Request) {
+  if (process.env.GITHUB_ACTIONS)
+    return Response.json(
+      { error: "Indisponivel no GitHub Pages." },
+      { status: 503 },
+    );
+
   if (request.headers.get("origin") !== new URL(request.url).origin)
     return new Response(null, { status: 403 });
   const t = await token();

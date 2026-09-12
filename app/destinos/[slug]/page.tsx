@@ -1,8 +1,14 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getDestinations, getFeed } from "@/lib/feed/service";
+import { destinations } from "@/lib/demo";
 import { PostCard } from "@/components/posts/PostCard";
 import { DestinationActions } from "@/components/destinations/DestinationActions";
+
+export function generateStaticParams() {
+  return destinations.map((destination) => ({ slug: destination.slug }));
+}
+
 export async function generateMetadata({
   params,
 }: {

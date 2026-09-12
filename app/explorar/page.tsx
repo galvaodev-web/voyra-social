@@ -10,7 +10,9 @@ export default async function Page({
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
-  const { q } = await searchParams;
+  const { q } = process.env.GITHUB_ACTIONS
+    ? { q: undefined }
+    : await searchParams;
   const [feed, destinations, c] = await Promise.all([
     getFeed({ search: q }),
     getDestinations(),

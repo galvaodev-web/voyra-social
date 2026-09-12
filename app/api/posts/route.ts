@@ -3,7 +3,16 @@ import { createClient as createAdmin } from "@supabase/supabase-js";
 import { postSchema } from "@/lib/validation";
 import { validateFile, sniffMime } from "@/lib/media";
 import sharp from "sharp";
+
+export const dynamic = "force-static";
+
 export async function POST(request: Request) {
+  if (process.env.GITHUB_ACTIONS)
+    return Response.json(
+      { error: "Indisponivel no GitHub Pages." },
+      { status: 503 },
+    );
+
   if (request.headers.get("origin") !== new URL(request.url).origin)
     return Response.json({ error: "Origem inválida." }, { status: 403 });
   const client = await createClient();

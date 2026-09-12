@@ -1,8 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { getPost } from "@/lib/feed/service";
 import { PostCard } from "@/components/posts/PostCard";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 export const metadata = { title: "Coleção", robots: { index: false } };
+export function generateStaticParams() {
+  return [{ id: "demo" }];
+}
+
 export default async function Page({
   params,
 }: {
@@ -10,7 +14,13 @@ export default async function Page({
 }) {
   const { id } = await params;
   const c = await createClient();
-  if (!c) redirect("/login");
+  if (!c)
+    return (
+      <div className="empty-state">
+        <h1>Colecoes privadas</h1>
+        <p>Entre na sua conta Voyra para ver suas colecoes salvas.</p>
+      </div>
+    );
   const { data: collection } = await c
     .schema("social")
     .from("collections")

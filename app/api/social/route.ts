@@ -7,7 +7,16 @@ import {
   usernameSchema,
 } from "@/lib/validation";
 const uuid = z.string().uuid();
+
+export const dynamic = "force-static";
+
 export async function GET(request: Request) {
+  if (process.env.GITHUB_ACTIONS)
+    return Response.json(
+      { error: "Indisponivel no GitHub Pages." },
+      { status: 503 },
+    );
+
   const client = await createClient();
   if (!client)
     return Response.json(
@@ -19,13 +28,23 @@ export async function GET(request: Request) {
   } = await client.auth.getUser();
   const q = new URL(request.url).searchParams;
   const db = client.schema("social");
-  if(q.get('resource')==='relationship'){
-    const target=uuid.safeParse(q.get('target'));
-    if(!target.success)return Response.json({error:'Perfil inválido.'},{status:400});
-    if(!user)return Response.json({following:false,self:false});
-    const {data,error}=await db.from('follows').select('id').eq('follower_id',user.id).eq('following_id',target.data).maybeSingle();
-    if(error)return Response.json({error:'Não foi possível verificar o perfil.'},{status:400});
-    return Response.json({following:!!data,self:user.id===target.data});
+  if (q.get("resource") === "relationship") {
+    const target = uuid.safeParse(q.get("target"));
+    if (!target.success)
+      return Response.json({ error: "Perfil inválido." }, { status: 400 });
+    if (!user) return Response.json({ following: false, self: false });
+    const { data, error } = await db
+      .from("follows")
+      .select("id")
+      .eq("follower_id", user.id)
+      .eq("following_id", target.data)
+      .maybeSingle();
+    if (error)
+      return Response.json(
+        { error: "Não foi possível verificar o perfil." },
+        { status: 400 },
+      );
+    return Response.json({ following: !!data, self: user.id === target.data });
   }
   if (q.get("resource") === "comments") {
     const id = uuid.safeParse(q.get("postId"));
@@ -61,6 +80,12 @@ export async function GET(request: Request) {
   return Response.json({ error: "Recurso não encontrado." }, { status: 404 });
 }
 export async function POST(request: Request) {
+  if (process.env.GITHUB_ACTIONS)
+    return Response.json(
+      { error: "Indisponivel no GitHub Pages." },
+      { status: 503 },
+    );
+
   if (request.headers.get("origin") !== new URL(request.url).origin)
     return Response.json({ error: "Origem inválida." }, { status: 403 });
   const client = await createClient();
@@ -112,12 +137,10 @@ export async function POST(request: Request) {
         .select()
         .single();
     } else if (b.action === "account_request") {
-      result = await db
-        .from("account_requests")
-        .insert({
-          user_id: user.id,
-          type: z.enum(["EXPORT", "DELETE_ECOSYSTEM"]).parse(b.type),
-        });
+      result = await db.from("account_requests").insert({
+        user_id: user.id,
+        type: z.enum(["EXPORT", "DELETE_ECOSYSTEM"]).parse(b.type),
+      });
     } else {
       const target = uuid.parse(b.target);
       if (b.action === "like" || b.action === "save") {
@@ -144,15 +167,13 @@ export async function POST(request: Request) {
                 .delete()
                 .eq("follower_id", user.id)
                 .eq("following_id", target)
-            : await db
-                .from("follows")
-                .upsert(
-                  { follower_id: user.id, following_id: target },
-                  {
-                    onConflict: "follower_id,following_id",
-                    ignoreDuplicates: true,
-                  },
-                );
+            : await db.from("follows").upsert(
+                { follower_id: user.id, following_id: target },
+                {
+                  onConflict: "follower_id,following_id",
+                  ignoreDuplicates: true,
+                },
+              );
       } else if (b.action === "block") {
         result = await db
           .from("user_blocks")
@@ -198,18 +219,16 @@ export async function POST(request: Request) {
                 .delete()
                 .eq("collection_id", uuid.parse(b.collectionId))
                 .eq("post_id", target)
-            : await db
-                .from("collection_items")
-                .upsert(
-                  {
-                    collection_id: uuid.parse(b.collectionId),
-                    post_id: target,
-                  },
-                  {
-                    onConflict: "collection_id,post_id",
-                    ignoreDuplicates: true,
-                  },
-                );
+            : await db.from("collection_items").upsert(
+                {
+                  collection_id: uuid.parse(b.collectionId),
+                  post_id: target,
+                },
+                {
+                  onConflict: "collection_id,post_id",
+                  ignoreDuplicates: true,
+                },
+              );
       } else if (
         b.action === "destination_follow" ||
         b.action === "want_to_go"
@@ -225,15 +244,13 @@ export async function POST(request: Request) {
                 .delete()
                 .eq("user_id", user.id)
                 .eq("destination_id", target)
-            : await db
-                .from(table)
-                .upsert(
-                  { user_id: user.id, destination_id: target },
-                  {
-                    onConflict: "user_id,destination_id",
-                    ignoreDuplicates: true,
-                  },
-                );
+            : await db.from(table).upsert(
+                { user_id: user.id, destination_id: target },
+                {
+                  onConflict: "user_id,destination_id",
+                  ignoreDuplicates: true,
+                },
+              );
       } else if (b.action === "read_notification") {
         result = await db
           .from("notifications")

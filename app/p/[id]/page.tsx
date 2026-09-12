@@ -1,6 +1,12 @@
 import { notFound } from "next/navigation";
 import { getPost, getFeed } from "@/lib/feed/service";
+import { demoPosts } from "@/lib/demo";
 import { PostCard } from "@/components/posts/PostCard";
+
+export function generateStaticParams() {
+  return demoPosts.map((post) => ({ id: post.id }));
+}
+
 export async function generateMetadata({
   params,
 }: {
