@@ -2,8 +2,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { adminClient } from "@/lib/supabase/admin";
 import { getCompletedTrips, getTripCompletion } from "@/lib/voyra-travel";
-
-export const dynamic = "force-dynamic";
+import { isGithubPages } from "@/lib/deploy";
 
 async function authenticatedSession() {
   const client = await createClient();
@@ -19,6 +18,7 @@ async function authenticatedSession() {
 }
 
 export async function GET() {
+  if (isGithubPages) return Response.json([]);
   const auth = await authenticatedSession();
   if (!auth)
     return Response.json({ error: "Entre na sua conta Voyra." }, { status: 401 });

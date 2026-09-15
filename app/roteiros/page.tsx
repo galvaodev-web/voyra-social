@@ -4,7 +4,6 @@ import { createClient } from "@/lib/supabase/server";
 import { ImportRouteButton } from "@/components/routes/ImportRouteButton";
 
 export const metadata = { title: "Roteiros da comunidade" };
-export const dynamic = "force-dynamic";
 
 type CommunityRoute = {
   id: string;

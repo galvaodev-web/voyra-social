@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Shell } from "@/components/Shell";
 import { createClient } from "@/lib/supabase/server";
+import { githubPagesBasePath } from "@/lib/deploy";
 
 export const metadata: Metadata = {
   metadataBase: new URL(
@@ -13,6 +14,9 @@ export const metadata: Metadata = {
   },
   description:
     "Uma comunidade feita para quem vive, planeja e compartilha viagens.",
+  icons: {
+    icon: `${githubPagesBasePath}/icon.svg`,
+  },
 };
 
 export default async function RootLayout({

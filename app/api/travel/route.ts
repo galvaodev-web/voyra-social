@@ -7,8 +7,7 @@ import {
   publishTrip,
   TravelUnavailable,
 } from "@/lib/voyra-travel";
-
-export const dynamic = "force-dynamic";
+import { isGithubPages } from "@/lib/deploy";
 
 async function token() {
   const c = await createClient();
@@ -24,6 +23,7 @@ async function token() {
 }
 
 export async function GET() {
+  if (isGithubPages) return Response.json([]);
   const t = await token();
   if (!t)
     return Response.json(

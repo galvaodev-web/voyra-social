@@ -4,13 +4,14 @@ import { DestinationCard } from "@/components/destinations/DestinationCard";
 import { createClient } from "@/lib/supabase/server";
 import { travelers } from "@/lib/demo";
 import Link from "next/link";
+import { isGithubPages } from "@/lib/deploy";
 export const metadata = { title: "Explorar" };
 export default async function Page({
   searchParams,
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
-  const { q } = process.env.GITHUB_ACTIONS
+  const { q } = isGithubPages
     ? { q: undefined }
     : await searchParams;
   const [feed, destinations, c] = await Promise.all([

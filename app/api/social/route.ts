@@ -6,11 +6,14 @@ import {
   reportReasons,
   usernameSchema,
 } from "@/lib/validation";
+import { isGithubPages } from "@/lib/deploy";
 const uuid = z.string().uuid();
 
-export const dynamic = "force-dynamic";
-
 export async function GET(request: Request) {
+  if (isGithubPages)
+    return Response.json({
+      error: "Recursos de conta nao rodam no GitHub Pages.",
+    });
   const client = await createClient();
   if (!client)
     return Response.json(

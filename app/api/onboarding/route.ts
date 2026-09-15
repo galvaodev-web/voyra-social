@@ -1,8 +1,6 @@
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 
-export const dynamic = "force-dynamic";
-
 const schema = z.object({
   destinationIds: z.array(z.string().uuid()).max(20),
   categories: z

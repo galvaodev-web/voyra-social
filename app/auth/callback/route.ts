@@ -1,9 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
-
-export const dynamic = "force-dynamic";
+import { isGithubPages } from "@/lib/deploy";
 
 export async function GET(request: Request) {
+  if (isGithubPages)
+    return new Response("Autenticacao indisponivel no GitHub Pages.", {
+      status: 200,
+    });
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
   const c = await createClient();

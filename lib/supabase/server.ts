@@ -2,7 +2,10 @@ import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { configured, cookieOptions } from "./config";
+import { isGithubPages } from "@/lib/deploy";
+
 export async function createClient() {
+  if (isGithubPages) return null;
   if (!configured) return null;
   const store = await cookies();
   return createServerClient(

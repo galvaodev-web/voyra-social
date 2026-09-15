@@ -1,8 +1,8 @@
 import { getFeed } from "@/lib/feed/service";
-
-export const dynamic = "force-dynamic";
+import { isGithubPages } from "@/lib/deploy";
 
 export async function GET(request: Request) {
+  if (isGithubPages) return Response.json(await getFeed());
   const p = new URL(request.url).searchParams;
   try {
     return Response.json(

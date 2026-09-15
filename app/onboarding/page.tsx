@@ -4,7 +4,6 @@ import { getDestinations } from "@/lib/feed/service";
 import { OnboardingForm } from "@/components/onboarding/OnboardingForm";
 
 export const metadata = { title: "Personalize sua Voyra" };
-export const dynamic = "force-dynamic";
 
 export default async function Page({
   searchParams,
@@ -12,7 +11,7 @@ export default async function Page({
   searchParams: Promise<{ edit?: string }>;
 }) {
   const client = await createClient();
-  if (!client) redirect("/login");
+  if (!client) return <OnboardingForm destinations={await getDestinations()} />;
   const {
     data: { user },
   } = await client.auth.getUser();

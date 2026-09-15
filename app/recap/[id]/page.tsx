@@ -6,8 +6,6 @@ import { createClient } from "@/lib/supabase/server";
 import { ShareRecapButton } from "@/components/passport/ShareRecapButton";
 import type { Passport, Profile } from "@/types/social";
 
-export const dynamic = "force-dynamic";
-
 async function loadRecap(id: string) {
   const client = await createClient();
   if (!client) return null;

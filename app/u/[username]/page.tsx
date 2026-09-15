@@ -9,8 +9,7 @@ import { FollowButton } from "@/components/profile/FollowButton";
 import { PostCard } from "@/components/posts/PostCard";
 import { ProfileReport } from "@/components/profile/ProfileReport";
 import type { Passport } from "@/types/social";
-
-export const dynamic = "force-dynamic";
+import { isGithubPages } from "@/lib/deploy";
 
 export function generateStaticParams() {
   return travelers.map((traveler) => ({ username: traveler.username }));
@@ -33,7 +32,9 @@ export default async function Page({
   searchParams: Promise<{ tab?: string }>;
 }) {
   const { username } = await params;
-  const { tab = "posts" } = await searchParams;
+  const { tab = "posts" } = isGithubPages
+    ? { tab: "posts" }
+    : await searchParams;
   const p = await getProfile(username);
   if (!p) notFound();
   const feed = await getFeed({ author: p.id });

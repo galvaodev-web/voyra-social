@@ -4,8 +4,6 @@ import { postSchema } from "@/lib/validation";
 import { validateFile, sniffMime } from "@/lib/media";
 import sharp from "sharp";
 
-export const dynamic = "force-dynamic";
-
 export async function POST(request: Request) {
   if (request.headers.get("origin") !== new URL(request.url).origin)
     return Response.json({ error: "Origem inválida." }, { status: 403 });

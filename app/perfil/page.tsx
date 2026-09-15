@@ -3,10 +3,15 @@ import { ProfileEditor } from "@/components/profile/ProfileEditor";
 import { PassportPanel } from "@/components/passport/PassportPanel";
 import { redirect } from "next/navigation";
 export const metadata = { title: "Meu perfil", robots: { index: false } };
-export const dynamic = "force-dynamic";
 export default async function Page() {
   const c = await createClient();
-  if (!c) redirect("/login");
+  if (!c)
+    return (
+      <section className="empty-state">
+        <h1>Perfil indisponivel na vitrine estatica.</h1>
+        <p>Entre pelo deploy com servidor para editar sua conta Voyra.</p>
+      </section>
+    );
   const {
     data: { user },
   } = await c.auth.getUser();

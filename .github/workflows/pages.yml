@@ -1,20 +1,21 @@
-name: Voyra Social CI
+name: Deploy Voyra Social to GitHub Pages
 
 on:
   push:
-    branches: [main, "release/**"]
-  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
+  pages: write
+  id-token: write
 
 concurrency:
-  group: voyra-social-ci-${{ github.ref }}
+  group: pages
   cancel-in-progress: true
 
 jobs:
-  validate:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -35,5 +36,24 @@ jobs:
       - name: Unit and database policy tests
         run: npm test
 
-      - name: Production build
-        run: npm run build
+      - name: Build static export
+        run: npm run build:pages
+        env:
+          NEXT_PUBLIC_DEPLOY_TARGET: github-pages
+          NEXT_PUBLIC_SITE_URL: https://galvaodev-web.github.io/voyra-social
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./out
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
