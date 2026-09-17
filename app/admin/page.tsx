@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { Activity, Flag, Plane, Search, UsersRound } from "lucide-react";
+import { Activity, Flag, MessageCircle, Plane, Search, UsersRound } from "lucide-react";
 import { ModerationQueue, type AdminReport } from "@/components/admin/ModerationQueue";
 import { adminSession } from "@/lib/server/admin";
 
@@ -20,10 +20,11 @@ export default async function AdminPage() {
     return result.error ? null : result.count;
   }
 
-  const [users, posts, trips, reports, creators, searches, referrals, subscriptions, queue] =
+  const [users, posts, comments, trips, reports, creators, searches, referrals, subscriptions, queue, audit] =
     await Promise.all([
       count("social", "profiles"),
       count("social", "posts", ["status", "PUBLISHED"]),
+      count("social", "comments"),
       count("public", "trips"),
       count("social", "reports", ["status", "OPEN"]),
       count("social", "profiles", ["creator", true]),
@@ -37,10 +38,17 @@ export default async function AdminPage() {
         .in("status", ["OPEN", "REVIEWING"])
         .order("created_at", { ascending: true })
         .limit(100),
+      admin
+        .schema("social")
+        .from("moderation_actions")
+        .select("id,action,target_type,reason,created_at")
+        .order("created_at", { ascending: false })
+        .limit(20),
     ]);
   const metrics = [
     ["Usuários", users, UsersRound],
     ["Posts", posts, Activity],
+    ["Comentários", comments, MessageCircle],
     ["Viagens", trips, Plane],
     ["Denúncias", reports, Flag],
     ["Creators", creators, UsersRound],
@@ -68,6 +76,19 @@ export default async function AdminPage() {
       <section className="admin-section">
         <h2>Fila de denúncias</h2>
         <ModerationQueue reports={(queue.data ?? []) as AdminReport[]} />
+      </section>
+      <section className="admin-section">
+        <h2>Auditoria recente</h2>
+        {(audit.data ?? []).length ? (
+          <div className="stack">
+            {(audit.data ?? []).map((item) => (
+              <div className="collection-option" key={item.id}>
+                <span><strong>{item.action}</strong><small>{item.target_type} · {item.reason}</small></span>
+                <time dateTime={item.created_at}>{new Date(item.created_at).toLocaleString("pt-BR")}</time>
+              </div>
+            ))}
+          </div>
+        ) : <p className="muted">Nenhuma ação administrativa registrada.</p>}
       </section>
     </div>
   );

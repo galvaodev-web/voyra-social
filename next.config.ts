@@ -6,6 +6,19 @@ const repoName = "voyra-social";
 const isGithubPages =
   process.env.NEXT_PUBLIC_DEPLOY_TARGET === "github-pages";
 const basePath = isGithubPages ? `/${repoName}` : "";
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "object-src 'none'",
+  "frame-ancestors 'none'",
+  "form-action 'self'",
+  "script-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https://images.unsplash.com https://*.supabase.co",
+  "media-src 'self' blob: https://*.supabase.co",
+  "font-src 'self' data:",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.ingest.sentry.io",
+].join("; ");
 
 const config: NextConfig = {
   poweredByHeader: false,
@@ -44,6 +57,10 @@ const config: NextConfig = {
                   key: "Permissions-Policy",
                   value: "geolocation=(), camera=(), microphone=()",
                 },
+                { key: "Content-Security-Policy", value: contentSecurityPolicy },
+                ...(process.env.NODE_ENV === "production"
+                  ? [{ key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" }]
+                  : []),
               ],
             },
           ];
