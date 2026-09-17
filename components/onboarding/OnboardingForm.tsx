@@ -1,15 +1,18 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Compass, Sparkles } from "lucide-react";
+import { Compass, Sparkles, UserRound } from "lucide-react";
 import type { Destination } from "@/types/social";
 
 const categories = ["Dicas", "Comida", "Natureza", "Praia", "Aventura", "Cultura", "História", "Viagem"] as const;
 
-export function OnboardingForm({ destinations }: { destinations: Destination[] }) {
+type CreatorOption = { id: string; username: string; name: string; city: string };
+
+export function OnboardingForm({ destinations, creators }: { destinations: Destination[]; creators: CreatorOption[] }) {
   const router = useRouter();
   const [selectedDestinations, setSelectedDestinations] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedCreators, setSelectedCreators] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -27,6 +30,7 @@ export function OnboardingForm({ destinations }: { destinations: Destination[] }
         body: JSON.stringify({
           destinationIds: skip ? [] : selectedDestinations,
           categories: skip ? [] : selectedCategories,
+          creatorIds: skip ? [] : selectedCreators,
         }),
       });
       const result = (await response.json()) as { error?: string };
@@ -78,6 +82,25 @@ export function OnboardingForm({ destinations }: { destinations: Destination[] }
             ))}
           </div>
         </div>
+
+        {creators.length > 0 && (
+          <div>
+            <h2><UserRound size={19} /> Criadores para descobrir</h2>
+            <div className="filter-row">
+              {creators.map((creator) => (
+                <button
+                  type="button"
+                  key={creator.id}
+                  className={`chip ${selectedCreators.includes(creator.id) ? "selected" : ""}`}
+                  onClick={() => toggle(selectedCreators, creator.id, setSelectedCreators)}
+                  aria-pressed={selectedCreators.includes(creator.id)}
+                >
+                  {creator.name} <small>@{creator.username}</small>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <button className="primary" disabled={busy} onClick={() => void finish(false)}>
           {busy ? "Preparando seu feed…" : "Entrar na Voyra"}

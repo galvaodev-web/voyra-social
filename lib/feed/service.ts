@@ -97,11 +97,16 @@ export async function getFeed(options: FeedQuery = {}): Promise<FeedPage> {
         client
           .schema("social")
           .from("user_preferences")
-          .select("destination_ids,categories")
+          .select("destination_ids,categories,creator_ids")
           .eq("user_id", user.id)
           .maybeSingle(),
       ]);
-      prefs.creators = follows.data?.map((r) => r.following_id) ?? [];
+      prefs.creators = Array.from(
+        new Set([
+          ...(follows.data?.map((r) => r.following_id) ?? []),
+          ...((explicit.data?.creator_ids as string[] | null) ?? []),
+        ]),
+      );
       prefs.destinations = Array.from(
         new Set([
           ...(dests.data?.map((r) => r.destination_id) ?? []),

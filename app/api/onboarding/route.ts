@@ -6,6 +6,7 @@ const schema = z.object({
   categories: z
     .array(z.enum(["Dicas", "Comida", "Natureza", "Praia", "Aventura", "Cultura", "História", "Viagem"]))
     .max(20),
+  creatorIds: z.array(z.string().uuid()).max(12),
 });
 
 export async function POST(request: Request) {
@@ -24,6 +25,7 @@ export async function POST(request: Request) {
         user_id: user.id,
         destination_ids: input.destinationIds,
         categories: input.categories,
+        creator_ids: input.creatorIds,
         onboarding_completed: true,
         updated_at: new Date().toISOString(),
       },
