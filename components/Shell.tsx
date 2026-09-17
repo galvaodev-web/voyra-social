@@ -14,6 +14,7 @@ import {
   Search,
   MoveUpRight,
   Globe2,
+  ShieldCheck,
 } from "lucide-react";
 const navigation = [
   { href: "/", label: "Início", icon: House },
@@ -25,9 +26,11 @@ const navigation = [
 export function Shell({
   children,
   account,
+  isAdmin = false,
 }: {
   children: React.ReactNode;
   account?: { name: string; username: string } | null;
+  isAdmin?: boolean;
 }) {
   const path = usePathname();
   return (
@@ -69,6 +72,12 @@ export function Shell({
             <Route size={20} />
             Roteiros
           </Link>
+          {isAdmin && (
+            <Link className="nav-link" href="/admin">
+              <ShieldCheck size={20} />
+              Administração
+            </Link>
+          )}
         </nav>
         <Link href="/criar" className="primary create-nav">
           <Plus size={19} />

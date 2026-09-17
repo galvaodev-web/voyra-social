@@ -53,11 +53,11 @@ Para hospedar o endpoint de upload, use um runtime Node e um ingress que aceite 
 
 - Cadastro e login Supabase com callback PKCE, edição de perfil público e logout.
 - Feed com páginas de 12 posts e cursor composto `(created_at,id)`, carregamento incremental e seguindo cronológico.
-- Publicação de imagem/carrossel, vídeo, texto, dica, avaliação e formatos textuais de diário/roteiro; legenda, hashtags, menções, destino, lugar e visibilidade.
+- Publicação de imagem/carrossel, texto, dica, avaliação e formatos textuais de diário/roteiro; vídeo permanece bloqueado por padrão até existir pipeline seguro.
 - Curtir/descurtir, seguir/deixar de seguir, comentar/responder/excluir próprio comentário, salvar/remover, criar coleções e adicionar posts a coleções.
 - Explorar, busca em publicações, pessoas e destinos, páginas públicas de destino/perfil/post, links compartilháveis e metadados Open Graph.
 - Seguir destino, “Quero conhecer”, denúncias de post/comentário/perfil, bloqueio de usuários e notificações persistidas por triggers.
-- Painel com totais reais do criador, solicitações de exportação/exclusão (fila pendente, não executadas automaticamente).
+- Painel com totais reais do criador, exportação autenticada e exclusão coordenada do ecossistema.
 - Layout desktop de três colunas, navegação mobile, skeletons, estados vazios, foco visível e modais com foco nativo de dialog.
 
 O botão “Adicionar ao meu roteiro” consulta o adapter Travel autenticado, oferece viagens e envia uma operação idempotente. Se o adapter não estiver configurado, mostra indisponibilidade sem afirmar que adicionou o lugar.
@@ -74,11 +74,11 @@ Coordenadas de posts e `trip_id` são obrigatoriamente nulos nesta fase; o vínc
 
 `lib/feed/rank.ts` usa recência, popularidade com escala logarítmica, salvamentos e afinidade. O ranking acontece **dentro de cada janela cronológica** para manter paginação determinística; ainda não é um ranking global personalizado. Preferências de criador e destino alimentam o serviço; interesses inferidos de curtidas/salvos e views serão adicionados depois. Filtros locais selecionam a janela carregada; não prometem uma busca geográfica “Perto”.
 
-`lib/analytics` define os eventos previstos, sem enviar dados até configurar provedor/consentimento. `post_metrics_daily` reserva agregação de views; não cria uma linha por visualização. `lib/moderation` oferece o contrato de análise futura. Posts recebem PENDING, sem remoção automática baseada em IA. O dashboard administrativo de tratamento de denúncias ainda precisa ser construído; a fila já persiste denúncias.
+`lib/analytics` define os eventos previstos, sem enviar dados até configurar provedor e consentimento. `post_metrics_daily` reserva agregação de views; não cria uma linha por visualização. Posts recebem PENDING, sem remoção automática baseada em IA. `/admin` oferece métricas e fila de denúncias com autorização server-side, sanções e trilha em `moderation_actions`.
 
 ## Integração com Travel
 
-Veja `ARCHITECTURE.md`. `VOYRA_TRAVEL_API_URL` ativa o contrato descrito em `lib/voyra-travel`. Não implemente acesso por service role ao agregado privado de viagens para fazer esse botão funcionar. A autenticação é a mesma desde que ambos apontem ao mesmo Supabase; **SSO de sessão entre domínios não está pronto apenas por preencher a URL**.
+Veja `ARCHITECTURE.md`. `VOYRA_TRAVEL_API_URL` ativa o contrato descrito em `lib/voyra-travel`; o adapter usa o Bearer do próprio usuário, não service role, para acessar viagens. A sessão web compartilhada requer o mesmo Supabase e `NEXT_PUBLIC_AUTH_COOKIE_DOMAIN` nos dois produtos em HTTPS.
 
 ## Testes e limites da validação
 
@@ -88,7 +88,7 @@ Playwright cobre navegação, busca, validação de publicação, comportamento 
 
 ## Preparado, ainda não concluído
 
-Publicação/importação de roteiros Travel, diário vinculado a viagens, mapa pessoal, solicitação/aprovação de follow privado, localização adiada, avatar por upload, bookmarks de lugar independente, processamento de solicitações de conta, moderação humana administrativa, IA, clima ao vivo, agregação de views, ranking global e monetização. Perfis privados ficam desativados no banco até existir aprovação de follow.
+Travel Tokens, Recap enriquecido, diário vinculado a viagens, mapa pessoal, solicitação/aprovação de follow privado, localização adiada, avatar por upload, bookmarks de lugar independente, moderação automática, IA, clima ao vivo, agregação de views, ranking global e monetização. Perfis privados ficam desativados no banco até existir aprovação de follow.
 
 A PWA possui manifest, cor e ícone; não oferece cache offline de dados privados nem fila offline de uploads. Anúncios e pagamentos não estão implementados. Termos e privacidade são textos iniciais sobre os controles do produto e precisam do responsável legal/operacional e canal de atendimento antes de lançamento público.
 

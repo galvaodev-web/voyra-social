@@ -91,3 +91,22 @@ export async function getTripCompletion(token: string, tripId: string): Promise<
     await travelRequest(`/social/trips/${z.string().uuid().parse(tripId)}/completion`, token),
   );
 }
+
+export async function deleteEcosystemAccount(token: string) {
+  const base = process.env.VOYRA_TRAVEL_API_URL;
+  if (!base) throw new TravelUnavailable();
+  const response = await fetch(`${base.replace(/\/$/, "")}/social/account`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ confirmation: "EXCLUIR" }),
+    cache: "no-store",
+    signal: AbortSignal.timeout(20000),
+  });
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(payload?.error || "Não foi possível excluir a conta Voyra.");
+  }
+}

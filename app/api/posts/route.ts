@@ -42,6 +42,12 @@ export async function POST(request: Request) {
     const files = form
       .getAll("media")
       .filter((f): f is File => f instanceof File);
+    const videoEnabled = process.env.NEXT_PUBLIC_VIDEO_UPLOAD_ENABLED === "true";
+    if (
+      !videoEnabled &&
+      (post.type === "VIDEO" || files.some((file) => file.type.startsWith("video/")))
+    )
+      throw new Error("O envio de vídeo ainda não está disponível.");
     if (
       files.length > 10 ||
       files.reduce((s, f) => s + f.size, 0) > 100 * 1024 * 1024

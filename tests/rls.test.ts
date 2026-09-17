@@ -33,6 +33,12 @@ beforeAll(async () => {
     readFileSync("supabase/migrations/202609110002_creator.sql", "utf8"),
   );
   await db.exec(
+    readFileSync(
+      "supabase/migrations/202609170001_admin_moderation.sql",
+      "utf8",
+    ),
+  );
+  await db.exec(
     `insert into auth.users(id) values('${a}'),('${b}'),('${c}');select set_config('request.jwt.claim.sub','${a}',false);insert into social.posts(id,author_id,type,caption,visibility,status) values('${pub}','${a}','TEXT','Public experience','PUBLIC','PUBLISHED'),('${followers}','${a}','TEXT','Followers experience','FOLLOWERS','PUBLISHED'),('${priv}','${a}','TEXT','Private experience','PRIVATE','PUBLISHED'),('${draft}','${a}','TEXT','Draft experience','PUBLIC','DRAFT');`,
   );
 });
@@ -213,6 +219,29 @@ describe("RLS em PostgreSQL embarcado, com papéis reais", () => {
     ).rejects.toThrow();
     await expect(
       db.exec(`update social.posts set status='PUBLISHED' where id='${draft}'`),
+    ).rejects.toThrow();
+  });
+  it("mantém papéis administrativos privados e aplica sanção auditada", async () => {
+    await asUser(b, "select 1");
+    await expect(db.query("select * from social.admin_users")).rejects.toThrow();
+    await admin(
+      `insert into social.admin_users(user_id,role) values('${a}','ADMIN');`,
+    );
+    await asUser(
+      b,
+      `insert into social.reports(id,reporter_id,target_type,target_id,reason) values('${c}','${b}','PROFILE','${c}','Spam')`,
+    );
+    await admin(
+      `select * from social.moderate_report('${a}','${c}','SUSPEND','Suspensão de teste auditada')`,
+    );
+    expect(
+      (await admin("select * from social.moderation_actions")).length,
+    ).toBeGreaterThan(0);
+    await asUser(c, "select 1");
+    await expect(
+      db.exec(
+        `insert into social.posts(author_id,type,caption) values('${c}','TEXT','Post bloqueado')`,
+      ),
     ).rejects.toThrow();
   });
 });

@@ -33,6 +33,7 @@ const schema = z.object({
 });
 type Fields = z.infer<typeof schema>;
 export function CreatePost({ destinations }: { destinations: Destination[] }) {
+  const videoEnabled = process.env.NEXT_PUBLIC_VIDEO_UPLOAD_ENABLED === "true";
   const {
     register,
     handleSubmit,
@@ -87,16 +88,26 @@ export function CreatePost({ destinations }: { destinations: Destination[] }) {
         <label className="upload-zone">
           <ImagePlus size={32} />
           <strong>Adicione um pedaço da sua viagem</strong>
-          <span>Até 10 fotos de 10 MB ou um vídeo de 50 MB.</span>
+          <span>
+            {videoEnabled
+              ? "Até 10 fotos de 10 MB ou um vídeo de 50 MB."
+              : "Até 10 fotos de 10 MB cada."}
+          </span>
           <input
             aria-label="Escolher fotos ou vídeo"
             type="file"
             multiple
-            accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime"
+            accept={
+              videoEnabled
+                ? "image/jpeg,image/png,image/webp,video/mp4,video/quicktime"
+                : "image/jpeg,image/png,image/webp"
+            }
             onChange={(e) => {
               const selected = Array.from(e.target.files ?? []);
               const error =
-                selected.length > 10
+                !videoEnabled && selected.some((file) => file.type.startsWith("video/"))
+                  ? "O envio de vídeo ainda não está disponível."
+                  : selected.length > 10
                   ? "Escolha até 10 fotos."
                   : selected.map(validateFile).find(Boolean);
               if (error) {
@@ -130,7 +141,7 @@ export function CreatePost({ destinations }: { destinations: Destination[] }) {
             Tipo de publicação
             <select {...register("type")}>
               <option value="IMAGE">Fotos</option>
-              <option value="VIDEO">Vídeo curto</option>
+              {videoEnabled && <option value="VIDEO">Vídeo curto</option>}
               <option value="TEXT">História</option>
               <option value="TIP">Dica de viajante</option>
               <option value="PLACE_REVIEW">Avaliação de lugar</option>

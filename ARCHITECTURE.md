@@ -23,12 +23,12 @@ PUBLIC/FOLLOWERS/PRIVATE é aplicado pelo PostgreSQL. Perfil privado foi explici
 
 ## Sessão em voyra.com e social.voyra.com
 
-Hoje, ambos podem usar a mesma conta ao apontar ao mesmo Supabase, mas os clientes do Travel inspecionados ainda não configuram `cookieOptions.domain`. Por padrão cada host conserva sua própria sessão.
+Ambos usam o mesmo Supabase Auth e implementam `NEXT_PUBLIC_AUTH_COOKIE_DOMAIN` nos clientes SSR, browser e proxy. Sem essa variável, cada host conserva sua própria sessão, como deve ocorrer em localhost.
 
 Para compartilhar sessão futuramente:
 
 1. Ambos devem usar o mesmo projeto Supabase, storage key/nome e convenções de `@supabase/ssr`.
-2. Configure `Domain=.voyra.com`, `Path=/`, `Secure=true`, `SameSite=Lax` nos clientes SSR, browser e proxy **dos dois produtos**. No Social isso é habilitado por `NEXT_PUBLIC_AUTH_COOKIE_DOMAIN=.voyra.com`. O Travel requer a mesma alteração em seu próprio repositório.
+2. Configure `NEXT_PUBLIC_AUTH_COOKIE_DOMAIN=.voyra.com` nos dois produtos; os helpers aplicam `Path=/`, `Secure` em produção e `SameSite=Lax`.
 3. Use HTTPS real nos dois hosts, configure redirect URLs de Auth e evite domínio de cookie em localhost.
 4. Faça uma migração de cookies host-only antigos, evitando duas versões do mesmo cookie. Valide login, refresh simultâneo, expiração e logout nas duas abas.
 5. Não salve tokens em query strings nem os transfira via links. O callback usa code exchange PKCE, com redirect interno fixo.
@@ -47,7 +47,7 @@ Um cookie de domínio amplia a superfície de confiança a todos os subdomínios
 | publishTrip | POST /social/published-trips | `{tripId,consent:true}`; projeção pública revisada |
 | importRoute | POST /social/import-route | `{routeId}`; cópia sanitizada para viagem do usuário |
 
-O serviço receptor deve verificar JWT, ownership da viagem, visibilidade do post, bloqueios, status de publicação e integridade do lugar. Deve garantir idempotência em transação, gravar só dados permitidos e retornar sucesso apenas após persistência. Não confie no `tripId` ou no texto do lugar enviados pelo browser. A parte receptora desses endpoints não existe ainda no Travel local; foi mantida como integração preparada, conforme pedido.
+O Travel implementa esses endpoints, verifica o JWT do usuário, ownership e os contratos publicados. Importações de lugar e rota usam marcadores/chaves determinísticas para serem idempotentes, e Passport depende da validação server-side de viagem concluída.
 
 ## Evolução sem vazamento
 
@@ -57,7 +57,7 @@ O serviço receptor deve verificar JWT, ownership da viagem, visibilidade do pos
 - Moderação: provider assíncrono para texto/mídia e revisão humana. Não há auto-delete de conteúdo por heurística.
 - Vídeo: upload em área temporária, job durável para transcoding/metadata/poster, promoção ao bucket final apenas após validação. O servidor de requests não faz transcoding.
 - Métricas: agregados diários e deduplicação em janela/stream. O banco preparado não aceita gravações públicas de counters.
-- Exclusão: coordenar filas Social/Travel/Storage e obrigações de retenção. O formulário atual registra uma solicitação, não chama admin.deleteUser.
+- Exclusão: o Social remove suas mídias e chama o endpoint autenticado do Travel, que cancela Stripe, remove documentos e exclui a identidade compartilhada. A operação é repetível, mas continua sem transação distribuída entre Storage, Stripe e Auth.
 - Mobile: reutilizar interfaces TypeScript e contrato HTTP. Sessão nativa deverá usar armazenamento seguro; cookies de subdomínio são estratégia para a web.
 
 ## Verificações e operação
