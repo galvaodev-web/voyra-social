@@ -10,7 +10,8 @@ Use the same Supabase project as Voyra Travel. Apply the Travel schema/migration
 2. `supabase/migrations/202609110002_creator.sql`
 3. `supabase/migrations/202609120003_growth.sql`
 4. `supabase/migrations/202609170001_admin_moderation.sql`
-5. `supabase/seed.sql` (optional catalog/demo content; never production identities)
+5. `supabase/migrations/202609180001_web_1_0.sql`
+6. `supabase/seed.sql` (optional catalog/demo content; never production identities)
 
 Expose the `social` schema through the Supabase Data API and keep RLS enabled.
 
@@ -47,7 +48,7 @@ values ('AUTH-USER-UUID', 'ADMIN');
 
 Never expose an admin-creation endpoint. `/admin` and `/api/admin/moderation` re-check the active role server-side. Actions are written to `social.moderation_actions`; suspensions and bans also synchronize Supabase Auth.
 
-`GET /api/account/export` downloads the authenticated user's Travel and Social data. Social account deletion removes Social media first and then calls Travel's bearer-protected `/social/account`; Travel cancels Stripe, removes Travel files and deletes the shared Auth user.
+`GET /api/account/export` downloads the authenticated user's allowlisted Travel and Social data. Social delegates deletion to Travel's bearer-protected `/social/account`; the durable Travel job enumerates Social and Travel Storage, cancels Stripe and removes the shared Auth identity, and can be retried by cron.
 
 ## 4. Product loop
 
@@ -56,6 +57,8 @@ Production is expected to support this end-to-end flow:
 `Discover → add to Travel → travel → complete → Passport → Recap → share → new discovery`
 
 Passport awards can only be issued from the authenticated Travel completion endpoint. The Social client cannot mint arbitrary destinations or travel history.
+
+Passport visibility is changed through `social.set_passport_visibility`, which atomically updates the Passport and linked Tokens. Direct authenticated updates to the visibility column are revoked.
 
 Public Recaps contain only the Passport-safe snapshot (destination, dates, duration and place count). Expenses, documents, members and private diary content are never part of the public artifact.
 

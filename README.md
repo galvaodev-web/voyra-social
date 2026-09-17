@@ -58,6 +58,8 @@ Para hospedar o endpoint de upload, use um runtime Node e um ingress que aceite 
 - Explorar, busca em publicações, pessoas e destinos, páginas públicas de destino/perfil/post, links compartilháveis e metadados Open Graph.
 - Seguir destino, “Quero conhecer”, denúncias de post/comentário/perfil, bloqueio de usuários e notificações persistidas por triggers.
 - Painel com totais reais do criador, exportação autenticada e exclusão coordenada do ecossistema.
+- Onboarding curto com destinos, estilos e criadores que alimentam o ranking inicial.
+- Voyra Passport com Tokens verificados, Recap público allowlisted, controle de visibilidade e compartilhamento idempotente no feed.
 - Layout desktop de três colunas, navegação mobile, skeletons, estados vazios, foco visível e modais com foco nativo de dialog.
 
 O botão “Adicionar ao meu roteiro” consulta o adapter Travel autenticado, oferece viagens e envia uma operação idempotente. Se o adapter não estiver configurado, mostra indisponibilidade sem afirmar que adicionou o lugar.
@@ -86,9 +88,11 @@ Vitest verifica validação, assinatura de mídia, ranking e as migrations reais
 
 Playwright cobre navegação, busca, validação de publicação, comportamento explícito da demonstração e ausência de overflow em 320, 375, 390, 414, 768, 1024 e 1440 px. Autenticação real, upload remoto e integração Travel precisam de ambiente de staging com credenciais; não são apresentados como testados sem essa infraestrutura.
 
-## Preparado, ainda não concluído
+## Implementado e dependências externas
 
-Travel Tokens, Recap enriquecido, diário vinculado a viagens, mapa pessoal, solicitação/aprovação de follow privado, localização adiada, avatar por upload, bookmarks de lugar independente, moderação automática, IA, clima ao vivo, agregação de views, ranking global e monetização. Perfis privados ficam desativados no banco até existir aprovação de follow.
+Passport, Voyra Tokens, Recap, publicação do Recap, recuperação de senha, exportação abrangente e exclusão coordenada estão implementados. A emissão depende do endpoint autenticado do Travel e nunca aceita histórico arbitrário do navegador. Auth/Storage/SMTP, sessão entre subdomínios e o contrato Travel precisam ser homologados em staging com o mesmo projeto Supabase.
+
+Mapa pessoal, localização, moderação automática, IA, clima ao vivo, agregação de views e ranking global permanecem planejados. Perfis privados ficam desativados até existir aprovação de follow.
 
 A PWA possui manifest, cor e ícone; não oferece cache offline de dados privados nem fila offline de uploads. Anúncios e pagamentos não estão implementados. Termos e privacidade são textos iniciais sobre os controles do produto e precisam do responsável legal/operacional e canal de atendimento antes de lançamento público.
 
