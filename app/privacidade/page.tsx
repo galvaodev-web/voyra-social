@@ -1,40 +1,31 @@
 import { AccountRequests } from "@/components/AccountRequests";
 export const metadata = { title: "Privacidade" };
+
 export default function Page() {
+  const controller = process.env.NEXT_PUBLIC_LEGAL_ENTITY ?? "Operador do Voyra";
+  const contact = process.env.NEXT_PUBLIC_PRIVACY_EMAIL ?? process.env.NEXT_PUBLIC_SUPPORT_EMAIL;
   return (
     <article className="prose">
       <h1>Seu mundo. Sua privacidade.</h1>
       <p>
-        Esta página descreve os controles da versão inicial. A política
-        definitiva, identidade do controlador, contato e prazos de atendimento
-        devem ser publicados antes da abertura ao público.
+        {controller} controla os dados tratados no Voyra Travel e Voyra Social.
+        {contact ? <> Solicitações de privacidade também podem ser enviadas para <a href={`mailto:${contact}`}>{contact}</a>.</> : null}
       </p>
       <h2>O que é compartilhado</h2>
       <p>
-        Seu perfil social inclui apenas as informações que você escolhe
-        publicar. Posts podem ser públicos, visíveis a seguidores ou privados.
-        Coleções e salvos pertencem à sua conta. O mesmo identificador de
-        usuário conecta os produtos Voyra.
+        Perfil, posts, roteiros, Passport, Recap e Travel Tokens aparecem publicamente somente conforme a visibilidade escolhida. Viagens privadas, documentos, reservas, participantes e despesas detalhadas não são publicados.
       </p>
-      <h2>Localização e viagens</h2>
+      <h2>Localização e mídia</h2>
       <p>
-        Não coletamos GPS ao vivo. Evite publicar endereço de hospedagem,
-        documentos, localizadores ou informações financeiras. Viagens privadas
-        não são exibidas no feed. Regiões e locais marcados são contexto
-        escolhido pelo autor.
+        O produto não coleta GPS ao vivo. Fotos ficam em buckets privados e são entregues por links temporários de até cinco minutos. Conteúdo tornado público pode ser copiado por terceiros durante esse período.
       </p>
-      <h2>Mídia e acesso</h2>
+      <h2>Exportação</h2>
       <p>
-        Arquivos são armazenados no Supabase com regras de acesso e links
-        temporários. Fotos públicas podem ser copiadas por terceiros. A
-        revogação de um link temporário não é instantânea: o prazo atual é de
-        até cinco minutos.
+        A exportação abaixo gera imediatamente um arquivo JSON com dados de conta, viagens, gastos, metadados de documentos e reservas, buscas, alertas, Tokens, interações sociais, preferências e eventos vinculados ao usuário. Arquivos binários não são incluídos no pacote.
       </p>
-      <h2>Seus controles</h2>
+      <h2>Exclusão</h2>
       <p>
-        Você pode editar seu perfil, remover curtidas e salvos, bloquear
-        usuários e denunciar conteúdo. Exportação e exclusão são solicitações
-        pendentes de processamento, ainda sem automação.
+        A exclusão inicia imediatamente a remoção coordenada da identidade, dados Travel e Social, arquivos privados e cliente Stripe. Uma fila protegida repete limpezas que falharem temporariamente. Registros que precisem ser preservados por obrigação legal devem ser definidos pelo operador antes do lançamento público.
       </p>
       <AccountRequests />
     </article>

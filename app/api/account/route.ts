@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import { adminClient } from "@/lib/supabase/admin";
 import { deleteEcosystemAccount } from "@/lib/voyra-travel";
 import { requestContext, structuredLog } from "@/lib/server/logger";
 
@@ -20,27 +19,6 @@ export async function DELETE(request: Request) {
     if (!user || !sessionData.session)
       return Response.json({ error: "Autenticação necessária." }, { status: 401 });
     context.userId = user.id;
-    const admin = adminClient();
-    const postResult = await admin
-      .schema("social")
-      .from("posts")
-      .select("id")
-      .eq("author_id", user.id);
-    if (postResult.error) throw postResult.error;
-    const postIds = (postResult.data ?? []).map((post) => post.id);
-    if (postIds.length) {
-      const mediaResult = await admin
-        .schema("social")
-        .from("post_media")
-        .select("type,storage_path")
-        .in("post_id", postIds);
-      if (mediaResult.error) throw mediaResult.error;
-      for (const item of mediaResult.data ?? []) {
-        const bucket = item.type === "VIDEO" ? "social-videos" : "social-images";
-        const removed = await admin.storage.from(bucket).remove([item.storage_path]);
-        if (removed.error) throw removed.error;
-      }
-    }
     await deleteEcosystemAccount(sessionData.session.access_token);
     await client.auth.signOut({ scope: "local" });
     structuredLog("info", "account_deleted", context);
