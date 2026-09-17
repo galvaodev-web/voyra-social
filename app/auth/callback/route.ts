@@ -9,10 +9,14 @@ export async function GET(request: Request) {
     });
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
+  const requested = url.searchParams.get("next");
+  const next = requested && /^\/(?:onboarding|redefinir-senha)(?:\?|$)/.test(requested)
+    ? requested
+    : "/onboarding";
   const c = await createClient();
   if (code && c) {
     const { error } = await c.auth.exchangeCodeForSession(code);
-    if (!error) return NextResponse.redirect(new URL("/onboarding", url));
+    if (!error) return NextResponse.redirect(new URL(next, url));
   }
   return NextResponse.redirect(new URL("/login?erro=confirmacao", url));
 }

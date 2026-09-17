@@ -7,6 +7,20 @@ export function AuthForm({ signup = false }: { signup?: boolean }) {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const router = useRouter();
+  async function google() {
+    setBusy(true);
+    setMessage("");
+    try {
+      const { error } = await createClient().auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: `${window.location.origin}/auth/callback?next=/onboarding` },
+      });
+      if (error) throw error;
+    } catch {
+      setMessage("Não foi possível conectar ao Google.");
+      setBusy(false);
+    }
+  }
   return (
     <section className="form-card auth-card">
       <span className="eyebrow">UMA CONTA. TODO O UNIVERSO VOYRA.</span>
@@ -88,10 +102,16 @@ export function AuthForm({ signup = false }: { signup?: boolean }) {
         <button disabled={busy} className="primary">
           {busy ? "Aguarde…" : signup ? "Criar minha conta" : "Entrar na Voyra"}
         </button>
+        {!signup && <Link href="/esqueci-senha">Esqueci minha senha</Link>}
         <p role="status" className="notice">
           {message || "Suas viagens privadas continuam privadas."}
         </p>
       </form>
+      {process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED === "true" && (
+        <button className="secondary" disabled={busy} onClick={() => void google()}>
+          Continuar com Google
+        </button>
+      )}
       <Link className="auth-switch" href={signup ? "/login" : "/cadastro"}>
         {signup
           ? "Já tem uma conta? Entrar"
