@@ -58,6 +58,8 @@ export async function POST(request: Request) {
   try {
     const { tripId } = z.object({ tripId: z.string().uuid() }).parse(await request.json());
     const summary = await getTripCompletion(auth.token, tripId);
+    if (!summary.tokens.some((token) => token.token_type === "JOURNEY"))
+      throw new Error("O Voyra Travel ainda não emitiu o Journey Token desta viagem.");
     const admin = adminClient();
     const values = {
       user_id: auth.user.id,
@@ -69,11 +71,22 @@ export async function POST(request: Request) {
       end_date: summary.end_date,
       days: summary.days,
       place_count: summary.place_count,
+      cities: summary.cities,
+      token_snapshot: summary.tokens,
       public_route_id: summary.public_route_id,
       visible: true,
     };
     const inserted = await admin.schema("social").from("passports").insert(values).select("*").single();
-    if (!inserted.error) return Response.json(inserted.data, { status: 201 });
+    if (!inserted.error) {
+      const linked = await admin
+        .from("travel_tokens")
+        .update({ public_recap_id: inserted.data.id })
+        .eq("user_id", auth.user.id)
+        .eq("trip_id", summary.trip_id)
+        .in("public_id", summary.tokens.map((token) => token.public_id));
+      if (linked.error) throw linked.error;
+      return Response.json(inserted.data, { status: 201 });
+    }
     if (inserted.error.code !== "23505") throw inserted.error;
 
     const existing = await admin
@@ -84,6 +97,13 @@ export async function POST(request: Request) {
       .eq("trip_id", summary.trip_id)
       .single();
     if (existing.error) throw existing.error;
+    const linked = await admin
+      .from("travel_tokens")
+      .update({ public_recap_id: existing.data.id })
+      .eq("user_id", auth.user.id)
+      .eq("trip_id", summary.trip_id)
+      .in("public_id", summary.tokens.map((token) => token.public_id));
+    if (linked.error) throw linked.error;
     return Response.json(existing.data);
   } catch (error) {
     return Response.json(
@@ -93,6 +113,30 @@ export async function POST(request: Request) {
             ? error.message
             : "Não foi possível liberar seu Voyra Passport.",
       },
+      { status: 400 },
+    );
+  }
+}
+
+export async function PATCH(request: Request) {
+  if (request.headers.get("origin") !== new URL(request.url).origin)
+    return Response.json({ error: "Origem inválida." }, { status: 403 });
+  const auth = await authenticatedSession();
+  if (!auth)
+    return Response.json({ error: "Entre na sua conta Voyra." }, { status: 401 });
+  try {
+    const input = z
+      .object({ passportId: z.string().uuid(), visible: z.boolean() })
+      .parse(await request.json());
+    const result = await auth.client.schema("social").rpc("set_passport_visibility", {
+      target_passport: input.passportId,
+      next_visible: input.visible,
+    });
+    if (result.error) throw result.error;
+    return Response.json({ visible: result.data });
+  } catch {
+    return Response.json(
+      { error: "Não foi possível alterar a visibilidade do Passport." },
       { status: 400 },
     );
   }

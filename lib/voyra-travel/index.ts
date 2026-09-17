@@ -21,6 +21,27 @@ const completionSchema = z.object({
   end_date: z.string(),
   days: z.number().int().positive(),
   place_count: z.number().int().nonnegative(),
+  cities: z.array(z.string()).max(50),
+  tokens: z.array(
+    z.object({
+      public_id: z.string().uuid(),
+      share_slug: z.string(),
+      token_type: z.enum(["JOURNEY", "COUNTRY", "CITY", "ACHIEVEMENT"]),
+      destination: z.string().nullable(),
+      country_name: z.string().nullable(),
+      cities: z.array(z.string()),
+      travel_year: z.number().int().nullable(),
+      start_date: z.string().nullable(),
+      end_date: z.string().nullable(),
+      days: z.number().int().nullable(),
+      verified_place_count: z.number().int(),
+      serial_number: z.string(),
+      achievement_code: z.string().nullable(),
+      rarity: z.enum(["COMMON", "UNCOMMON", "RARE", "EPIC"]),
+      verification: z.enum(["TRAVEL_SERVER", "ADMIN"]),
+      issued_at: z.string(),
+    }),
+  ),
   public_route_id: z.string().uuid().nullable(),
 });
 export type UserTrip = z.infer<typeof tripSchema>;

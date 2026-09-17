@@ -4,12 +4,12 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { Award } from "lucide-react";
 import { FollowButton } from "@/components/profile/FollowButton";
 import { PostCard } from "@/components/posts/PostCard";
 import { ProfileReport } from "@/components/profile/ProfileReport";
 import type { Passport } from "@/types/social";
 import { isGithubPages } from "@/lib/deploy";
+import { VoyraTokenCard } from "@/components/passport/VoyraTokenCard";
 
 export function generateStaticParams() {
   return travelers.map((traveler) => ({ username: traveler.username }));
@@ -51,6 +51,18 @@ export default async function Page({
       .limit(50);
     if (!result.error) passports = (result.data ?? []) as Passport[];
   }
+  const publicTokens = passports.flatMap((passport) =>
+    passport.token_snapshot.map((token) => ({ token, recapId: passport.id })),
+  );
+  const passportCountries = new Set(
+    publicTokens.map(({ token }) => token.country_name).filter(Boolean),
+  ).size;
+  const passportCities = new Set(
+    publicTokens
+      .filter(({ token }) => token.token_type === "JOURNEY")
+      .map(({ token }) => token.destination)
+      .filter(Boolean),
+  ).size;
   return (
     <div style={{ maxWidth: 900, margin: "auto" }}>
       {p.cover_url && (
@@ -114,19 +126,21 @@ export default async function Page({
       {tab === "posts" ? (
         feed.posts.map((post) => <PostCard key={post.id} post={post} />)
       ) : tab === "passport" ? (
-        passports.length ? (
-          <section className="destination-grid" style={{ marginTop: 24 }}>
-            {passports.map((passport) => (
-              <Link className="rail-card" href={`/recap/${passport.id}`} key={passport.id}>
-                <span className="eyebrow"><Award size={13} /> VOYRA PASSPORT</span>
-                <h2>{passport.destination}</h2>
-                <p>{passport.country || "Viagem verificada"}</p>
-                <small>{passport.days} dias · {passport.place_count} lugares · {new Date(`${passport.end_date}T00:00:00Z`).getUTCFullYear()}</small>
-              </Link>
-            ))}
+        publicTokens.length ? (
+          <section style={{ marginTop: 24 }}>
+            <div className="profile-stats">
+              <span><strong>{passportCountries}</strong><small>países</small></span>
+              <span><strong>{passportCities}</strong><small>cidades</small></span>
+              <span><strong>{passports.length}</strong><small>viagens verificadas</small></span>
+            </div>
+            <div className="voyra-token-grid">
+              {publicTokens.map(({ token, recapId }) => (
+                <VoyraTokenCard token={token} recapId={recapId} key={token.public_id} />
+              ))}
+            </div>
           </section>
         ) : (
-          <section className="empty-state"><h2>Nenhum selo público ainda.</h2><p>Passports aparecem aqui quando o viajante decide compartilhá-los.</p></section>
+          <section className="empty-state"><h2>Nenhum Token público ainda.</h2><p>Tokens aparecem no Voyra Passport quando o viajante conclui e compartilha uma viagem.</p></section>
         )
       ) : (
         <section className="empty-state">

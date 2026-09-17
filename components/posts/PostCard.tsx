@@ -202,6 +202,11 @@ export function PostCard({
             ))}
           </span>
         </p>
+        {p.source_passport_id && (
+          <Link className="post-details" href={`/recap/${p.source_passport_id}`}>
+            Ver Travel Recap e Tokens <ArrowUpRight size={12} />
+          </Link>
+        )}
         {p.rating && (
           <div className="review-context">
             ★ {p.rating}/5 · Experiência pessoal · Visitado em {p.visited_at}

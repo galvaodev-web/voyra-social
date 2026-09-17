@@ -61,6 +61,7 @@ export interface SocialPost {
   latitude: number | null;
   longitude: number | null;
   trip_id: string | null;
+  source_passport_id?: string | null;
   visibility: Visibility;
   category: string;
   rating: number | null;
@@ -88,6 +89,25 @@ export interface Passport {
   end_date: string;
   days: number;
   place_count: number;
+  cities: string[];
+  token_snapshot: Array<{
+    public_id: string;
+    share_slug: string;
+    token_type: "JOURNEY" | "COUNTRY" | "CITY" | "ACHIEVEMENT";
+    destination: string | null;
+    country_name: string | null;
+    cities: string[];
+    travel_year: number | null;
+    start_date: string | null;
+    end_date: string | null;
+    days: number | null;
+    verified_place_count: number;
+    serial_number: string;
+    achievement_code: string | null;
+    rarity: "COMMON" | "UNCOMMON" | "RARE" | "EPIC";
+    verification: "TRAVEL_SERVER" | "ADMIN";
+    issued_at: string;
+  }>;
   public_route_id: string | null;
   visible: boolean;
   awarded_at: string;

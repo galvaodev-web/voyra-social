@@ -24,6 +24,8 @@ beforeAll(async () => {
   await db.exec(
     `create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create schema storage;create table auth.users(id uuid primary key,raw_user_meta_data jsonb default '{}');create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;grant usage on schema auth,storage to anon,authenticated;grant execute on function auth.uid() to anon,authenticated;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);create table storage.objects(id uuid default gen_random_uuid(),bucket_id text,name text);alter table storage.objects enable row level security;grant select on storage.objects to anon,authenticated;create function storage.foldername(name text) returns text[] language sql as $$ select string_to_array(name,'/') $$;`,
   );
+  await db.exec("create table public.published_routes(id uuid primary key);");
+  await db.exec("create table public.travel_tokens(user_id uuid,public_id uuid primary key,visible boolean not null default true);");
   const migration = readFileSync(
     "supabase/migrations/202609110001_social.sql",
     "utf8",
@@ -33,10 +35,16 @@ beforeAll(async () => {
     readFileSync("supabase/migrations/202609110002_creator.sql", "utf8"),
   );
   await db.exec(
+    readFileSync("supabase/migrations/202609120003_growth.sql", "utf8"),
+  );
+  await db.exec(
     readFileSync(
       "supabase/migrations/202609170001_admin_moderation.sql",
       "utf8",
     ),
+  );
+  await db.exec(
+    readFileSync("supabase/migrations/202609180001_web_1_0.sql", "utf8"),
   );
   await db.exec(
     `insert into auth.users(id) values('${a}'),('${b}'),('${c}');select set_config('request.jwt.claim.sub','${a}',false);insert into social.posts(id,author_id,type,caption,visibility,status) values('${pub}','${a}','TEXT','Public experience','PUBLIC','PUBLISHED'),('${followers}','${a}','TEXT','Followers experience','FOLLOWERS','PUBLISHED'),('${priv}','${a}','TEXT','Private experience','PRIVATE','PUBLISHED'),('${draft}','${a}','TEXT','Draft experience','PUBLIC','DRAFT');`,
@@ -243,5 +251,32 @@ describe("RLS em PostgreSQL embarcado, com papéis reais", () => {
         `insert into social.posts(author_id,type,caption) values('${c}','TEXT','Post bloqueado')`,
       ),
     ).rejects.toThrow();
+  });
+  it("protege Passport privado e compartilha Recap de forma idempotente", async () => {
+    const passport = "70000000-0000-4000-8000-000000000001";
+    const token = "71000000-0000-4000-8000-000000000001";
+    await admin(
+      `insert into public.travel_tokens(user_id,public_id) values('${a}','${token}');
+       insert into social.passports(id,user_id,trip_id,name,destination,country,start_date,end_date,days,place_count,visible,token_snapshot) values('${passport}','${a}','80000000-0000-4000-8000-000000000001','Portugal 2026','Lisboa','Portugal','2026-01-01','2026-01-03',3,4,false,'[{"public_id":"${token}"}]')`,
+    );
+    await asUser(b, "select 1");
+    expect((await db.query(`select id from social.passports where id='${passport}'`)).rows).toHaveLength(0);
+    await expect(asUser(a, `update social.passports set visible=true where id='${passport}'`)).rejects.toThrow();
+    await asUser(a, `select social.set_passport_visibility('${passport}',true)`);
+    await admin("select 1");
+    const tokenRows = await db.query<{ visible: boolean }>(
+      `select visible from public.travel_tokens where public_id='${token}'`,
+    );
+    expect(tokenRows.rows[0].visible).toBe(true);
+    await expect(asUser(b, `select social.set_passport_visibility('${passport}',false)`)).rejects.toThrow();
+    await asUser(a, "select 1");
+    const first = await db.query<{ share_passport: string }>(
+      `select social.share_passport('${passport}')`,
+    );
+    const second = await db.query<{ share_passport: string }>(
+      `select social.share_passport('${passport}')`,
+    );
+    expect(second.rows[0].share_passport).toBe(first.rows[0].share_passport);
+    expect((await db.query("select passport_id from social.passport_shares")).rows).toHaveLength(1);
   });
 });
